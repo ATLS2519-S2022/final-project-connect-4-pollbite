@@ -38,25 +38,36 @@ public class GreedyPlayer implements Player{
         int maxScoreCol = 1;
         
         // find maximum score from all possible moves 
-        for (int i = 1; i < cols; i++) {
+        for (int i = 0; i < cols; i++) {
         	
         	if (board.isValidMove(i) == true) {
         		board.move(i, id); // temporarily moves greedy player
+        		
+        		// scores for greedy player and opponent
+            	int playerScore = (int) calcScore(board, id);
+            	int opponentScore = (int) calcScore(board, 3-id);
+            	
+            	// calculated score for opponent
+            	int finalScore = opponentScore - playerScore;
+            	
+            	scoreHolder[i] = finalScore;
+            	
+            	board.unmove(i, id);
         	}
         	else {
         		scoreHolder[i] = -101;
         	}
         	
-        	// scores for greedy player and opponent
-        	int playerScore = (int) calcScore(board, id);
-        	int opponentScore = (int) calcScore(board, 3-id);
-        	
-        	// calculated score for opponent
-        	int finalScore = opponentScore - playerScore;
-        	
-        	scoreHolder[i] = finalScore;
-        	
-        	board.unmove(i, id);
+//        	// scores for greedy player and opponent
+//        	int playerScore = (int) calcScore(board, id);
+//        	int opponentScore = (int) calcScore(board, 3-id);
+//        	
+//        	// calculated score for opponent
+//        	int finalScore = opponentScore - playerScore;
+//        	
+//        	scoreHolder[i] = finalScore;
+//        	
+//        	board.unmove(i, id);
         }
         
         // looks for the biggest number in the array 
