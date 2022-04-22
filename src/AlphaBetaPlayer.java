@@ -1,41 +1,44 @@
 /* *****************************************************************************
- * Title:            GreedyPlayer
- * Files:            GreedyPlayer.java
+ *              ALL STUDENTS COMPLETE THESE SECTIONS
+ * Title:            AlphaBetaPlayer
+ * Files:            AlphaBetaPlayer.java
  * 					 
  * Semester:         Spring 2022
  * 
  * Author:           Lily Battin
  * 					 liba8321@colorado.edu
  * 
- * Description:		 A Connect-4 player that makes moves based on the maximum
- * 					 possible value of the heuristic it calculates
+ * Description:		 A Connect-4 player that uses a minimax algorithm with 
+ * 					 alpha beta pruning in order to make its next move
  * 
- * Written:       	 4-15-22
+ * Written:       	 4-22-22
  * 
  * Credits:          Roujia Sun
  **************************************************************************** */
 
 /**
- * A simple maximizing algorithm that uses a hueristic value to calculate a max
- * value move.
+ * A minimax algorithm with alpha beta pruning that has its depth limited by a
+ * time limiting arbitrator
  * 
  * @author Lily Battin
  *
  */
-public class GreedyPlayer implements Player {
+public class AlphaBetaPlayer implements Player {
 
-	int id; // player id
-	int cols; // columns on board
+	int id;
+	int cols;
+	int opponent_id;
 
 	@Override
 	public String name() {
-		return "Palkia";
+		return "Giratina";
 	}
 
 	@Override
 	public void init(int id, int msecPerMove, int rows, int cols) {
-		this.id = id; // id is player's id, opponents id is 3-id
+		this.id = id; // id is your player's id, opponents id is 3-id
 		this.cols = cols;
+		this.opponent_id = 3 - id;
 	}
 
 	@Override
@@ -49,6 +52,9 @@ public class GreedyPlayer implements Player {
 			throw new Error("Complaint: The board is full!");
 		}
 
+		// the maximum depth of the search
+		int maxDepth = 1;
+
 		// array that holds the calculated scores
 		int[] scoreHolder = new int[cols];
 
@@ -58,38 +64,70 @@ public class GreedyPlayer implements Player {
 		// holder for max score column, will give the first column by default
 		int maxScoreCol = 1;
 
-		// find maximum score from all possible moves
-		for (int i = 0; i < cols; i++) {
+		while (!arb.isTimeUp() && maxDepth <= board.numEmptyCells()) {
+			// run the first level of the alphabeta search and set move to the column
+			// corresponding to the best score
+			for (int i = 0; i < cols; i++) {
 
-			if (board.isValidMove(i) == true) {
-				board.move(i, id); // temporarily moves greedy player
+				if (board.isValidMove(i) == true) {
+					board.move(i, id); // temporarily moves alphabeta player
 
-				// scores for greedy player and opponent
-				int playerScore = (int) calcScore(board, id);
-				int opponentScore = (int) calcScore(board, 3 - id);
+					// calculated score for opponent
+					int alphabetaScore = alphabeta(board, maxDepth, -1000, 1000, false, arb);
 
-				// calculated score for opponent
-				int finalScore = opponentScore - playerScore;
+					scoreHolder[i] = alphabetaScore;
 
-				scoreHolder[i] = finalScore;
-
-				board.unmove(i, id);
+					board.unmove(i, id);
+				} else {
+					scoreHolder[i] = -101;
+				}
 			}
-			// sets score of column to an arbitrarily low number
-			else {
-				scoreHolder[i] = -101;
+
+			// looks for the biggest number in the array
+			for (int i = 0; i < scoreHolder.length; i++) {
+				if (scoreHolder[i] > maxScore) {
+					maxScore = scoreHolder[i];
+					maxScoreCol = i;
+				}
 			}
+			arb.setMove(maxScoreCol);
+		}
+	}
+
+	public int alphabeta(Connect4Board board, int depth, int a, int b, boolean isMaximizing, Arbitrator arb) {
+
+		if (depth == 0 || board.isFull() || arb.isTimeUp()) {
+			return calcScore(board, id) - calcScore(board, opponent_id);
 		}
 
-		// looks for the biggest number in the array
-		for (int i = 0; i < scoreHolder.length; i++) {
-			if (scoreHolder[i] > maxScore) {
-				maxScore = scoreHolder[i];
-				maxScoreCol = i;
+		if (isMaximizing == true) {
+			int bestScore = -1000;
+
+			for (int i = 0; i < cols; i++) {
+				bestScore = Math.max(bestScore, alphabeta(board, depth - 1, a, b, false, arb));
+				a = Math.max(a, bestScore);
+
+				// prunes the branch if value a is greater than b
+				if (a >= b) {
+					break;
+				}
 			}
+			return bestScore;
 		}
 
-		arb.setMove(maxScoreCol);
+		else {
+			int bestScore = 1000;
+			for (int i = 0; i < cols; i++) {
+				bestScore = Math.min(bestScore, alphabeta(board, depth - 1, a, b, true, arb));
+				b = Math.min(b, bestScore);
+
+				// prunes the branch is a is greater than b
+				if (a >= b) {
+					break;
+				}
+			}
+			return bestScore;
+		}
 	}
 
 	public int calcScore(Connect4Board board, int id) {
